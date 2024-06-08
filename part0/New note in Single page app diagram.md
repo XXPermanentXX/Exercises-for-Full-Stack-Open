@@ -16,3 +16,4 @@ sequenceDiagram
     deactivate server
 
     Note right of server: The server starts processesing the new note
+
