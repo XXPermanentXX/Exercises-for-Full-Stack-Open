@@ -3,12 +3,15 @@ import Filter from "./Filter.jsx";
 import PersonForm from "./PersonForm.jsx";
 import Persons from "./Persons.jsx";
 import personService from "./services/persons";
+import Notification from "./Notification.jsx";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [message, setMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     personService.getAll().then((data) => {
@@ -45,17 +48,15 @@ const App = () => {
           .update(person.id, { ...person, number: newNumber })
           .then((data) => {
             setPersons(persons.map((p) => (p.id !== data.id ? p : data)));
+            showNotification(`Successful Updated ${newName}`,false);
           });
       }
-      setNewName("");
-      setNewNumber("");
-      return;
+    } else {
+      personService.create(personObject).then((data) => {
+        setPersons(persons.concat(data));
+        showNotification(`Successful Added ${newName}`,false);
+      });
     }
-    personService.create(personObject).then((data) => {
-      setPersons(persons.concat(data));
-    });
-    setNewName("");
-    setNewNumber("");
   };
 
   const handleDelete = (id) => {
@@ -63,8 +64,21 @@ const App = () => {
     if (window.confirm(`Delete ${person.name}`)) {
       personService.remove(id).then((data) => {
         setPersons(persons.filter((person) => person.id !== data.id));
-      });
+        showNotification(`Successful Deleted ${person.name}`,false);
+      }).catch(error=>{
+        console.log(error.message)
+        showNotification(`Can't find ${person.name}`,true)
+      })
     }
+  };
+
+  const showNotification = (message, isError) => {
+    setNewName("");
+    setNewNumber("");
+    isError ? setErrorMessage(message) : setMessage(message);
+    setTimeout(() => {
+      isError ? setErrorMessage(null) : setMessage(null);
+    }, 3000);
   };
 
   return (
@@ -72,6 +86,7 @@ const App = () => {
       <h2>Phonebook</h2>
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
       <h2>add a new</h2>
+      <Notification message={message} errorMessage={errorMessage} />
       <PersonForm
         newName={newName}
         handleNameChange={handleNameChange}
