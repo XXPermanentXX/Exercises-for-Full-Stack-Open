@@ -1,8 +1,8 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import Filter from "./Filter.jsx";
 import PersonForm from "./PersonForm.jsx";
 import Persons from "./Persons.jsx";
-import axios from "axios";
+import personService from "./services/persons";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -11,11 +11,9 @@ const App = () => {
   const [filter, setFilter] = useState("");
 
   useEffect(() => {
-    axios.get('http://localhost:3001/persons').then(
-        response=>{
-          setPersons(response.data);
-        }
-    )
+    personService.getAll().then((data) => {
+      setPersons(data);
+    });
   }, []);
 
   const handleNameChange = (event) => {
@@ -35,17 +33,38 @@ const App = () => {
     const personObject = {
       name: newName,
       number: newNumber,
-      id: persons.length + 1,
     };
-    if (persons.find((person) => person.name === newName)) {
-      alert(`${newName} is already added to phonebook`);
+    const person = persons.find((person) => person.name === newName);
+    if (person) {
+      if (
+        window.confirm(
+          `${newName} is already added to phonebook, replace the old number with a new one?`,
+        )
+      ) {
+        personService
+          .update(person.id, { ...person, number: newNumber })
+          .then((data) => {
+            setPersons(persons.map((p) => (p.id !== data.id ? p : data)));
+          });
+      }
       setNewName("");
       setNewNumber("");
       return;
     }
-    setPersons(persons.concat(personObject));
+    personService.create(personObject).then((data) => {
+      setPersons(persons.concat(data));
+    });
     setNewName("");
     setNewNumber("");
+  };
+
+  const handleDelete = (id) => {
+    const person = persons.find((person) => person.id === id);
+    if (window.confirm(`Delete ${person.name}`)) {
+      personService.remove(id).then((data) => {
+        setPersons(persons.filter((person) => person.id !== data.id));
+      });
+    }
   };
 
   return (
@@ -54,14 +73,14 @@ const App = () => {
       <Filter filter={filter} handleFilterChange={handleFilterChange} />
       <h2>add a new</h2>
       <PersonForm
-          newName={newName}
-          handleNameChange={handleNameChange}
-          newNumber={newNumber}
-          handleNumberChange={handleNumberChange}
-          handleSubmit={handleSubmit}
+        newName={newName}
+        handleNameChange={handleNameChange}
+        newNumber={newNumber}
+        handleNumberChange={handleNumberChange}
+        handleSubmit={handleSubmit}
       />
       <h2>Numbers</h2>
-      <Persons persons={persons} filter={filter} />
+      <Persons persons={persons} filter={filter} handleDelete={handleDelete} />
     </div>
   );
 };
