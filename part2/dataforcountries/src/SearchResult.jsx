@@ -19,7 +19,7 @@ const SearchResult = ({ countries, search,setSearch,weather }) => {
         })}
       </>
     );
-  } else if (countries.length === 1) {
+  } else if (countries.length === 1&&weather) {
     return <DetailResult country={countries[0]} weather={weather}/>;
   }
 };

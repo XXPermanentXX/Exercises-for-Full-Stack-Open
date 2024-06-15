@@ -1,4 +1,3 @@
-import weather from "./services/weather.js";
 
 const DetailResult = ({ country, weather }) => {
   return (
@@ -15,8 +14,7 @@ const DetailResult = ({ country, weather }) => {
       <img
         src={country.flags.png}
         alt={country.name.common}
-        width="170"
-        height="170"
+        height="150"
       ></img>
       <h3>Weather in {country.capital[0]}</h3>
       <div>temperature {weather.current.temp} Celcius</div>

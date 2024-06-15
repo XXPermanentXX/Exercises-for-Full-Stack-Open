@@ -7,7 +7,7 @@ function App() {
   const [allCountries, setAllCountries] = useState([]);
   const [matchesCountries, setMatchesCountries] = useState([]);
   const [search, setSearch] = useState("");
-  const [weather, setWeather] = useState({});
+  const [weather, setWeather] = useState();
 
   useEffect(() => {
     countriesService.getAll().then((data) => {
@@ -22,12 +22,13 @@ function App() {
         matches.push(country);
       }
     });
-    if (matches.length === 1) getWeather(matches[0].capital[0]);
+    console.log(matches)
+    if (matches.length === 1) getWeather(matches[0]);
     setMatchesCountries(matches);
   },[search])
 
-  const getWeather = (capital) => {
-    weatherService.getWeather(capital).then((data) => {
+  const getWeather = (country) => {
+    weatherService.getWeather(country).then((data) => {
       console.log(data);
       setWeather(data);
     });
