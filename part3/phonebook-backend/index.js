@@ -31,6 +31,7 @@ const generateId=()=>{
 }
 
 app.use(cors());
+app.use(express.static('dist'))
 app.use(express.json());
 morgan.token("body",(req,res)=>{
   const body=JSON.stringify(req.body)
@@ -92,7 +93,7 @@ app.delete("/api/persons/:id",(req,res)=>{
   res.status(204).end()
 })
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
