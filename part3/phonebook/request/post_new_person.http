@@ -1,0 +1,18 @@
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "Shiqi Gong",
+  "number": "23-13-3124122"
+}
+
+###
+POST http://localhost:3001/api/persons
+Content-Type: application/json
+
+{
+  "name": "",
+  "number": "23-13-3124122"
+}
+
+###
