@@ -49,13 +49,17 @@ const App = () => {
           .then((data) => {
             setPersons(persons.map((p) => (p.id !== data.id ? p : data)));
             showNotification(`Successful Updated ${newName}`,false);
-          });
+          }).catch(error=>{
+          showNotification(`${error.response.data.error}`,true)
+          console.log(error.response.data.error)});
       }
     } else {
       personService.create(personObject).then((data) => {
         setPersons(persons.concat(data));
         showNotification(`Successful Added ${newName}`,false);
-      });
+      }).catch(error=>{
+        showNotification(`${error.response.data.error}`,true)
+        console.log(error.response.data.error)});
     }
   };
 
