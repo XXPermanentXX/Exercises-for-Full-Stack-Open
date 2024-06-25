@@ -61,9 +61,10 @@ const App = () => {
 
   const handleDelete = (id) => {
     const person = persons.find((person) => person.id === id);
+    console.log(id)
     if (window.confirm(`Delete ${person.name}`)) {
-      personService.remove(id).then((data) => {
-        setPersons(persons.filter((person) => person.id !== data.id));
+      personService.remove(id).then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
         showNotification(`Successful Deleted ${person.name}`,false);
       }).catch(error=>{
         console.log(error.message)
