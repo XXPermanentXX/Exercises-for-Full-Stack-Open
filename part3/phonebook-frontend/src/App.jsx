@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import Filter from "./components/Filter.jsx";
 import PersonForm from "./components/PersonForm.jsx";
-import Persons from "./components/Persons.jsx";
-import personService from "./services/persons";
+import People from "./components/People.jsx";
+import personService from "./services/people.js";
 import Notification from "./components/Notification.jsx";
 
 const App = () => {
-  const [persons, setPersons] = useState([]);
+  const [people, setPeople] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
@@ -15,7 +15,7 @@ const App = () => {
 
   useEffect(() => {
     personService.getAll().then((data) => {
-      setPersons(data);
+      setPeople(data);
     });
   }, []);
 
@@ -37,7 +37,7 @@ const App = () => {
       name: newName,
       number: newNumber,
     };
-    const person = persons.find((person) => person.name === newName);
+    const person = people.find((person) => person.name === newName);
     if (person) {
       if (
         window.confirm(
@@ -47,7 +47,7 @@ const App = () => {
         personService
           .update(person.id, { ...person, number: newNumber })
           .then((data) => {
-            setPersons(persons.map((p) => (p.id !== data.id ? p : data)));
+            setPeople(people.map((p) => (p.id !== data.id ? p : data)));
             showNotification(`Successful Updated ${newName}`,false);
           }).catch(error=>{
           showNotification(`${error.response.data.error}`,true)
@@ -55,7 +55,7 @@ const App = () => {
       }
     } else {
       personService.create(personObject).then((data) => {
-        setPersons(persons.concat(data));
+        setPeople(people.concat(data));
         showNotification(`Successful Added ${newName}`,false);
       }).catch(error=>{
         showNotification(`${error.response.data.error}`,true)
@@ -64,11 +64,11 @@ const App = () => {
   };
 
   const handleDelete = (id) => {
-    const person = persons.find((person) => person.id === id);
+    const person = people.find((person) => person.id === id);
     console.log(id)
     if (window.confirm(`Delete ${person.name}`)) {
       personService.remove(id).then(() => {
-        setPersons(persons.filter((person) => person.id !== id));
+        setPeople(people.filter((person) => person.id !== id));
         showNotification(`Successful Deleted ${person.name}`,false);
       }).catch(error=>{
         console.log(error.message)
@@ -89,7 +89,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter filter={filter} handleFilterChange={handleFilterChange} />
+      <Filter filterString={filter} handleFilterChange={handleFilterChange} />
       <h2>add a new</h2>
       <Notification message={message} errorMessage={errorMessage} />
       <PersonForm
@@ -100,7 +100,7 @@ const App = () => {
         handleSubmit={handleSubmit}
       />
       <h2>Numbers</h2>
-      <Persons persons={persons} filter={filter} handleDelete={handleDelete} />
+      <People people={people} filterString={filter} handleDelete={handleDelete} />
     </div>
   );
 };

@@ -1,8 +1,8 @@
-const Persons = ({ persons, filter, handleDelete }) => (
+const People = ({ people, filterString, handleDelete }) => (
   <div>
-    {persons
+    {people
       .filter((person) =>
-        person.name.toLowerCase().includes(filter.toLowerCase()),
+        person.name.toLowerCase().includes(filterString.toLowerCase()),
       )
       .map((person) => (
         <div key={person.name}>
@@ -13,4 +13,4 @@ const Persons = ({ persons, filter, handleDelete }) => (
   </div>
 );
 
-export default Persons;
+export default People;

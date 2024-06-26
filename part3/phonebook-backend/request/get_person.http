@@ -1,10 +1,10 @@
-GET http://localhost:3001/api/persons
+GET http://localhost:3001/api/people
 Accept: application/json
 
 ###
-GET http://localhost:3001/api/persons/667a85a8788f4d5cdedba192
+GET http://localhost:3001/api/people/667a85a8788f4d5cdedba192
 Accept: application/json
 
 ###
-GET http://localhost:3001/api/persons/5
+GET http://localhost:3001/api/people/5
 Accept: application/json
