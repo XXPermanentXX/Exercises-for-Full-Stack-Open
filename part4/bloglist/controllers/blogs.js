@@ -29,4 +29,42 @@ blogRouter.post("/", async (req, res) => {
   }
 });
 
+blogRouter.delete("/:id", async (req, res) => {
+  try {
+    const result = await Blog.findByIdAndDelete(req.params.id);
+    if (result) {
+      res.status(204).end();
+    } else {
+      res.status(404).json({ error: "Blog not found" });
+    }
+  } catch (error) {
+    logger.error(error);
+    res.status(400).json({ error: "Invalid ID format" });
+  }
+});
+
+blogRouter.put("/:id", async (req, res) => {
+  const { likes } = req.body;
+  const updatedBlog = { likes };
+
+  try {
+    const result = await Blog.findByIdAndUpdate(
+      req.params.id,
+      updatedBlog,
+      { new: true}
+    );
+
+    if (result) {
+      res.json(result);
+    } else {
+      res.status(404).json({ error: "Blog not found" });
+    }
+  } catch (error) {
+    logger.error(error);
+    res.status(400).json({ error: "Invalid data or ID format" });
+  }
+});
+
+
+
 module.exports = blogRouter;
