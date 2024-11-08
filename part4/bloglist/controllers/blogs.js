@@ -1,20 +1,32 @@
 const blogRouter = require("express").Router();
 const Blog = require("../models/blog");
 const logger = require("../utils/logger");
-const {response} = require("express");
+const { response } = require("express");
 
-blogRouter.get("/", (req, res) => {
-  Blog.find({}).then((blogs) => {
+blogRouter.get("/", async (req, res) => {
+  try {
+    const blogs = await Blog.find({});
     res.json(blogs);
-  });
+  } catch (error) {
+    logger.error(error);
+    res.status(500).json({ error: "Failed to retrieve blogs" });
+  }
 });
 
-blogRouter.post('/',(req,res)=>{
-    const blog=new Blog(req.body)
+blogRouter.post("/", async (req, res) => {
+  if (!req.body.title || !req.body.url) {
+    return res.status(400).json({ error: "Title and URL are required" });
+  }
 
-    blog.save().then(savedBlog=>{
-        res.status(201).json(savedBlog)
-    })
-})
 
-module.exports=blogRouter
+  try {
+    const blog = new Blog(req.body);
+    const savedBlog = await blog.save();
+    res.status(201).json(savedBlog);
+  } catch (error) {
+    logger.error(error);
+    res.status(400).json({ error: "Failed to save blog" });
+  }
+});
+
+module.exports = blogRouter;
