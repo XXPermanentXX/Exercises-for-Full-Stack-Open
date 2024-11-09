@@ -5,21 +5,7 @@ const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
 const api = supertest(app);
-
-const initialBlogs = [
-  {
-    title: "React patterns",
-    author: "Michael Chan",
-    url: "https://reactpatterns.com/",
-    likes: 7,
-  },
-  {
-    title: "Go To Statement Considered Harmful",
-    author: "Edsger W. Dijkstra",
-    url: "http://www.u.arizona.edu/~rubinson/copyright_violations/Go_To_Considered_Harmful.html",
-    likes: 5,
-  },
-];
+const { initialBlogs, nonExistingId, blogsInDb } = require("./test_helper");
 
 beforeEach(async () => {
   await Blog.deleteMany({});
@@ -66,10 +52,10 @@ describe("Blog API Tests", () => {
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
-      const response = await api.get("/api/blogs");
-      const titles = response.body.map((r) => r.title);
+      const blogs = await blogsInDb();
+      const titles = blogs.map((b) => b.title);
 
-      assert.strictEqual(response.body.length, initialBlogs.length + 1);
+      assert.strictEqual(blogs.length, initialBlogs.length + 1);
       assert(titles.includes("New Blog Post"));
     });
 
@@ -112,25 +98,25 @@ describe("Blog API Tests", () => {
 
   describe("Deleting a blog", () => {
     test("succeeds with status code 204 if id is valid", async () => {
-      const blogsAtStart = await api.get("/api/blogs");
-      const blogToDelete = blogsAtStart.body[0];
+      const blogsAtStart = await blogsInDb();
+      const blogToDelete = blogsAtStart[0];
 
       await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
 
-      const blogsAtEnd = await api.get("/api/blogs");
-      assert.strictEqual(blogsAtEnd.body.length, blogsAtStart.body.length - 1);
-      assert(!blogsAtEnd.body.some((b) => b.id === blogToDelete.id));
+      const blogsAtEnd = await blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1);
+      assert(!blogsAtEnd.some((b) => b.id === blogToDelete.id));
     });
 
     test("responds with 404 if blog ID does not exist", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      await api.delete(`/api/blogs/${nonExistentId}`).expect(404);
+      const nonExistentIdValue = await nonExistingId();
+      await api.delete(`/api/blogs/${nonExistentIdValue}`).expect(404);
     });
   });
 
   describe("Updating a blog's likes", () => {
     test("updates the number of likes for a blog post", async () => {
-      const blogsAtStart = await Blog.find({});
+      const blogsAtStart = await blogsInDb();
       const blogToUpdate = blogsAtStart[0];
 
       const updatedLikes = blogToUpdate.likes + 1;
@@ -145,8 +131,8 @@ describe("Blog API Tests", () => {
     });
 
     test("responds with 404 if blog ID does not exist", async () => {
-      const nonExistentId = new mongoose.Types.ObjectId().toString();
-      await api.put(`/api/blogs/${nonExistentId}`).send({ likes: 5 }).expect(404);
+      const nonExistentIdValue = await nonExistingId();
+      await api.put(`/api/blogs/${nonExistentIdValue}`).send({ likes: 5 }).expect(404);
     });
   });
 });
