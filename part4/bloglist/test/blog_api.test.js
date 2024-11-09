@@ -3,15 +3,22 @@ const assert = require("node:assert");
 const mongoose = require("mongoose");
 const supertest = require("supertest");
 const app = require("../app");
+const bcrypt = require('bcrypt')
+const User = require('../models/user')
 const Blog = require("../models/blog");
 const api = supertest(app);
-const { initialBlogs, nonExistingId, blogsInDb } = require("./test_helper");
+const helper = require("./test_helper");
 
 beforeEach(async () => {
   await Blog.deleteMany({});
-  const blogObjects = initialBlogs.map((blog) => new Blog(blog));
+  const blogObjects = helper.initialBlogs.map((blog) => new Blog(blog));
   const promiseArray = blogObjects.map((blog) => blog.save());
   await Promise.all(promiseArray);
+
+  await User.deleteMany({})
+  const passwordHash = await bcrypt.hash('sekret', 10)
+  const user = new User({ username: 'root', passwordHash })
+  await user.save()
 });
 
 describe("Blog API Tests", () => {
@@ -26,7 +33,7 @@ describe("Blog API Tests", () => {
 
     test("all blogs are returned", async () => {
       const response = await api.get("/api/blogs");
-      assert.strictEqual(response.body.length, initialBlogs.length);
+      assert.strictEqual(response.body.length, helper.initialBlogs.length);
     });
 
     test("a specific blog's unique identifier is 'id'", async () => {
@@ -52,10 +59,10 @@ describe("Blog API Tests", () => {
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
-      const blogs = await blogsInDb();
+      const blogs = await helper.blogsInDb();
       const titles = blogs.map((b) => b.title);
 
-      assert.strictEqual(blogs.length, initialBlogs.length + 1);
+      assert.strictEqual(blogs.length, helper.initialBlogs.length + 1);
       assert(titles.includes("New Blog Post"));
     });
 
@@ -98,25 +105,25 @@ describe("Blog API Tests", () => {
 
   describe("Deleting a blog", () => {
     test("succeeds with status code 204 if id is valid", async () => {
-      const blogsAtStart = await blogsInDb();
+      const blogsAtStart = await helper.blogsInDb();
       const blogToDelete = blogsAtStart[0];
 
       await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
 
-      const blogsAtEnd = await blogsInDb();
+      const blogsAtEnd = await helper.blogsInDb();
       assert.strictEqual(blogsAtEnd.length, blogsAtStart.length - 1);
       assert(!blogsAtEnd.some((b) => b.id === blogToDelete.id));
     });
 
     test("responds with 404 if blog ID does not exist", async () => {
-      const nonExistentIdValue = await nonExistingId();
+      const nonExistentIdValue = await helper.nonExistingId();
       await api.delete(`/api/blogs/${nonExistentIdValue}`).expect(404);
     });
   });
 
   describe("Updating a blog's likes", () => {
     test("updates the number of likes for a blog post", async () => {
-      const blogsAtStart = await blogsInDb();
+      const blogsAtStart = await helper.blogsInDb();
       const blogToUpdate = blogsAtStart[0];
 
       const updatedLikes = blogToUpdate.likes + 1;
@@ -131,10 +138,56 @@ describe("Blog API Tests", () => {
     });
 
     test("responds with 404 if blog ID does not exist", async () => {
-      const nonExistentIdValue = await nonExistingId();
+      const nonExistentIdValue = await helper.nonExistingId();
       await api.put(`/api/blogs/${nonExistentIdValue}`).send({ likes: 5 }).expect(404);
     });
   });
+});
+
+describe("User API Tests", () => {
+  test('creation succeeds with a fresh username', async () => {
+    const usersAtStart = await helper.usersInDb()
+
+    const newUser = {
+      username: 'mluukkai',
+      name: 'Matti Luukkainen',
+      password: 'salainen',
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDb()
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1)
+
+    const usernames = usersAtEnd.map(u => u.username)
+    assert(usernames.includes(newUser.username))
+  })
+
+  // test('creation fails with proper statuscode and message if username already taken', async () => {
+  //   const usersAtStart = await helper.usersInDb()
+
+  //   const newUser = {
+  //     username: 'root',
+  //     name: 'Superuser',
+  //     password: 'salainen',
+  //   }
+
+  //   const result = await api
+  //     .post('/api/users')
+  //     .send(newUser)
+  //     .expect(400)
+  //     .expect('Content-Type', /application\/json/)
+
+  //   console.log(result.body)
+  //   const usersAtEnd = await helper.usersInDb()
+  //   assert(result.body.error.includes('expected `username` to be unique'))
+
+  //   assert.strictEqual(usersAtEnd.length, usersAtStart.length)
+  // })
 });
 
 after(async () => {
