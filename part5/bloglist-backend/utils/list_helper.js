@@ -1,46 +1,67 @@
-const _ = require("lodash");
+const dummy = () => {
+  return 1
+}
 
 const totalLikes = (blogs) => {
-  return blogs.reduce((sum, current) => sum + current.likes, 0);
-};
+  return blogs.reduce((sum, blog) => sum + blog.likes, 0)
+}
 
 const favoriteBlog = (blogs) => {
-  if (blogs.length === 0) return {};
-  const sortedBlogs = [...blogs].sort((a, b) => b.likes - a.likes);
-  const targetBlog = sortedBlogs[0];
-  return {
-    title: targetBlog.title,
-    author: targetBlog.author,
-    likes: targetBlog.likes,
-  };
-};
+  return blogs.reduce((max, blog) => max.likes > blog.likes ? max : blog, {});
+}
 
 const mostBlogs = (blogs) => {
-  if (blogs.length === 0) return {};
-  const authorBlogsCounts = _.countBy(blogs, "author");
-  const topAuthor = _.maxBy(
-    Object.keys(authorBlogsCounts),
-    (author) => authorBlogsCounts[author],
-  );
+  if (!blogs.length) {
+    return null
+  }
+
+  const authors = blogs.reduce((acc, blog) => {
+    acc[blog.author] = (acc[blog.author] || 0) + 1
+    return acc;
+  }, {});
+
+  let maxAuthor = Object.keys(authors)[0]
+
+  for (const author in authors) {
+    if (authors[author] > authors[maxAuthor]) {
+      maxAuthor = author
+    }
+  }
+
   return {
-    author: topAuthor,
-    blogs: authorBlogsCounts[topAuthor],
-  };
-};
+    author: maxAuthor,
+    blogs: authors[maxAuthor]
+  }
+}
 
 const mostLikes = (blogs) => {
-  if (blogs.length === 0) return {};
-  const groupedBlogs = _.groupBy(blogs, "author");
-  const authorLikesCounts = _.map(groupedBlogs, (blogs, author) => ({
-    author: author,
-    likes: _.sumBy(blogs, "likes"),
-  }));
-  return _.maxBy(authorLikesCounts, "likes");
-};
+  if (!blogs.length) {
+    return null
+  }
+
+  const authors = blogs.reduce((acc, blog) => {
+    acc[blog.author] = (acc[blog.author] || 0) + blog.likes
+    return acc;
+  }, {});
+
+  let maxAuthor = Object.keys(authors)[0]
+
+  for (const author in authors) {
+    if (authors[author] > authors[maxAuthor]) {
+      maxAuthor = author
+    }
+  }
+
+  return {
+    author: maxAuthor,
+    likes: authors[maxAuthor]
+  }
+}
 
 module.exports = {
+  dummy,
   totalLikes,
   favoriteBlog,
   mostBlogs,
-  mostLikes,
-};
+  mostLikes
+}

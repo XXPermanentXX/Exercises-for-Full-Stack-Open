@@ -1,61 +1,71 @@
-const blogRouter = require("express").Router();
-const Blog = require("../models/blog");
-const middleware = require("../utils/middleware");
+const router = require('express').Router()
+const Blog = require('../models/blog')
+const userExtractor = require('../utils/middleware').userExtractor
 
-blogRouter.get("/", async (req, res) => {
-  const blogs = await Blog.find({}).populate("user", {
-    username: 1,
-    name: 1,
-    id: 1,
-  });
-  res.json({ blogs });
-});
+router.get('/', async (request, response) => {
+  const blogs = await Blog
+    .find({}).populate('user', { username: 1, name: 1 })
 
-blogRouter.post("/", middleware.userExtractor, async (req, res) => {
-  const user = req.user;
-  const { title, url } = req.body;
-  if (!title || !url) {
-    return res.status(400).json({ error: "Title and URL are required" });
-  }
+  response.json(blogs)
+})
 
-  const blog = new Blog({ ...req.body, user: user._id });
-  const savedBlog = await blog.save();
-  user.blogs = user.blogs.concat(savedBlog._id);
-  await user.save();
-  res.status(201).json(savedBlog);
-});
+router.post('/', userExtractor, async (request, response) => {
+  const blog = new Blog(request.body)
 
-blogRouter.delete("/:id", middleware.userExtractor, async (req, res) => {
-  const user = req.user;
+  const user = request.user
 
-  const blog = await Blog.findById(req.params.id);
+  if (!user ) {
+    return response.status(403).json({ error: 'user missing' })
+  }  
+
+  if (!blog.title || !blog.url ) {
+    return response.status(400).json({ error: 'title or url missing' })
+  }   
+
+  blog.likes = blog.likes | 0
+  blog.user = user
+  user.blogs = user.blogs.concat(blog._id)
+
+  await user.save()
+
+  const savedBlog = await blog.save()
+
+  response.status(201).json(savedBlog)
+})
+
+router.delete('/:id', userExtractor, async (request, response) => {
+  const user = request.user
+
+  const blog = await Blog.findById(request.params.id)
   if (!blog) {
-    return res.status(404).json({ error: "Blog not found" });
+    return response.status(204).end()
   }
 
-  if (blog.user.toString() !== user._id.toString()) {
-    return res
-      .status(403)
-      .json({ error: "You are not authorized to delete this blog" });
+  if ( user.id.toString() !== blog.user.toString() ) {
+    return response.status(403).json({ error: 'user not authorized' })
   }
 
-  await Blog.findByIdAndDelete(req.params.id);
-  res.status(204).end();
-});
+  await blog.deleteOne()
 
-blogRouter.put("/:id", async (req, res) => {
-  const { likes } = req.body;
-  const updatedBlog = { likes };
+  user.blogs = user.blogs.filter(b => b._id.toString() !== blog._id.toString())
 
-  const result = await Blog.findByIdAndUpdate(req.params.id, updatedBlog, {
-    new: true,
-  });
+  await user.save()
 
-  if (result) {
-    res.json(result);
-  } else {
-    res.status(404).json({ error: "Blog not found" });
+  response.status(204).end()
+})
+
+router.put('/:id', async (request, response) => {
+  const body = request.body
+
+  const blog = {
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes
   }
-});
 
-module.exports = blogRouter;
+  const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, { new: true })
+  response.json(updatedBlog)
+})
+
+module.exports = router
