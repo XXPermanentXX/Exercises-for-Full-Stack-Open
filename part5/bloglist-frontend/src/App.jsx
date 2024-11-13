@@ -1,41 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Blog from "./components/Blog";
+import BlogForm from "./components/BlogForm";
+import LoginForm from "./components/LoginForm";
+import Notification from "./components/Notification";
+import Togglable from "./components/Togglable";
 import blogService from "./services/blogs";
 import loginService from "./services/login";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const blogFormRef=useRef()
 
-  const LoginForm = () => (
-    <form onSubmit={handleLogin}>
-      <div>
-        username
-        <input
-          type="text"
-          value={username}
-          name="Username"
-          onChange={({ target }) => setUsername(target.value)}
-        />
-      </div>
-      <div>
-        password
-        <input
-          type="password"
-          value={password}
-          name="Password"
-          onChange={({ target }) => setPassword(target.value)}
-        />
-      </div>
-      <button type="submit">login</button>
-    </form>
-  );
+  const showNotification = (message, isError = false) => {
+    isError ? setErrorMessage(message) : setMessage(message);
+    setTimeout(() => {
+      isError ? setErrorMessage(null) : setMessage(null);
+    }, 3000);
+  };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-
+  const handleLogin = async (username, password) => {
     try {
       const user = await loginService.login({
         username,
@@ -44,10 +30,22 @@ const App = () => {
       window.localStorage.setItem("loggedBlogAppUser", JSON.stringify(user));
       blogService.setToken(user.token);
       setUser(user);
-      setUsername("");
-      setPassword("");
+      showNotification(`Welcome, ${user.name}!`);
     } catch (exception) {
-      console.log("Wrong credentials");
+      showNotification("Wrong username or password", true);
+    }
+  };
+
+  const handleCreate = async (newBlog) => {
+    try {
+      blogFormRef.current.toggleVisibility()
+      const savedBlog = await blogService.create(newBlog);
+      setBlogs(blogs.concat(savedBlog));
+      showNotification(
+        `a new blog ${savedBlog.title}! by ${savedBlog.author} added`
+      );
+    } catch (exception) {
+      showNotification("Error creating blog", true);
     }
   };
 
@@ -64,10 +62,19 @@ const App = () => {
     }
   }, []);
 
-  if (user === null) return LoginForm();
+  if (user === null)
+    return (
+      <div>
+        <h2>log in to application</h2>
+        <Notification message={message} errorMessage={errorMessage} />
+        <LoginForm handleLogin={handleLogin} />
+      </div>
+    );
+
   return (
     <div>
       <h2>blogs</h2>
+      <Notification message={message} errorMessage={errorMessage} />
 
       <div style={{ marginBottom: "20px" }}>
         <span>{user.name} logged in</span>
@@ -75,12 +82,18 @@ const App = () => {
           onClick={() => {
             window.localStorage.removeItem("loggedBlogAppUser");
             setUser(null);
+            showNotification("Logged out successfully");
           }}
         >
           logout
         </button>
       </div>
-      
+
+      <h2>create new</h2>
+      <Togglable buttonLabel="new note" ref={blogFormRef}>
+        <BlogForm handleCreate={handleCreate} />
+      </Togglable>
+
       {blogs.map((blog) => (
         <Blog key={blog.id} blog={blog} />
       ))}
