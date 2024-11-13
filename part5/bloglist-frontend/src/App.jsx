@@ -12,7 +12,7 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [message, setMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
-  const blogFormRef=useRef()
+  const blogFormRef = useRef();
 
   const showNotification = (message, isError = false) => {
     isError ? setErrorMessage(message) : setMessage(message);
@@ -38,19 +38,49 @@ const App = () => {
 
   const handleCreate = async (newBlog) => {
     try {
-      blogFormRef.current.toggleVisibility()
-      const savedBlog = await blogService.create(newBlog);
+      blogFormRef.current.toggleVisibility();
+      const savedBlog = await blogService.createBlog(newBlog);
       setBlogs(blogs.concat(savedBlog));
       showNotification(
-        `a new blog ${savedBlog.title}! by ${savedBlog.author} added`
+        `A new blog "${savedBlog.title}" by ${savedBlog.author} added`
       );
     } catch (exception) {
       showNotification("Error creating blog", true);
     }
   };
 
+  const handleLike = async (blog) => {
+    try {
+      const updatedBlog = await blogService.updateBlog(blog.id, {
+        ...blog,
+        likes: blog.likes + 1,
+      });
+      setBlogs(
+        blogs.map((b) => (b.id === updatedBlog.id ? updatedBlog : b))
+      );
+      showNotification("Blog liked successfully!", false);
+    } catch (exception) {
+      showNotification("Error updating blog", true);
+    }
+  };
+
+  const handleRemove = async (blog) => {
+    const confirmRemove = window.confirm(
+      `Remove blog "${blog.title}" by ${blog.author}`
+    );
+    if (confirmRemove) {
+      try {
+        await blogService.deleteBlog(blog.id);
+        setBlogs(blogs.filter((b) => b.id !== blog.id));
+        showNotification(`Blog "${blog.title}" removed successfully!`);
+      } catch (exception) {
+        showNotification("Error removing blog", true);
+      }
+    }
+  };
+
   useEffect(() => {
-    blogService.getAll().then((blogs) => setBlogs(blogs));
+    blogService.getAllBlogs().then((blogs) => setBlogs(blogs));
   }, []);
 
   useEffect(() => {
@@ -65,7 +95,7 @@ const App = () => {
   if (user === null)
     return (
       <div>
-        <h2>log in to application</h2>
+        <h2>Log in to application</h2>
         <Notification message={message} errorMessage={errorMessage} />
         <LoginForm handleLogin={handleLogin} />
       </div>
@@ -89,14 +119,22 @@ const App = () => {
         </button>
       </div>
 
-      <h2>create new</h2>
+      <h2>Create new</h2>
       <Togglable buttonLabel="new note" ref={blogFormRef}>
         <BlogForm handleCreate={handleCreate} />
       </Togglable>
 
-      {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
-      ))}
+      {blogs
+        .sort((a, b) => b.likes - a.likes)
+        .map((blog) => (
+          <Blog
+            key={blog.id}
+            blog={blog}
+            user={user}
+            handleLike={handleLike}
+            handleRemove={handleRemove}
+          />
+        ))}
     </div>
   );
 };
