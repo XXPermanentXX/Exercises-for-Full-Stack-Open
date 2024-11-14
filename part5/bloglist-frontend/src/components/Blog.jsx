@@ -17,7 +17,7 @@ const Blog = ({ blog, user, handleLike, handleRemove }) => {
 
   return (
     <div style={blogStyle}>
-      <div>
+      <div className="blog">
         {blog.title} {blog.author + ' '}
         <button onClick={toggleVisibility}>{visible ? 'hide' : 'view'}</button>
       </div>
